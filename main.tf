@@ -5,6 +5,9 @@ variable "vpc_cidr_block" {}
 variable "subnet_cidr_block" {}
 variable "env_prefix" {}
 variable "avail_zone" {}
+variable "instance_type" {}
+variable "public_key_location" {}
+//variable "public_key_location" {}
 // -------------variable block-------------------------
 
 resource "aws_vpc" "myapp-vpc" {
@@ -14,6 +17,7 @@ resource "aws_vpc" "myapp-vpc" {
     Name = "${var.env_prefix}-vpc"
   }
 }
+
 resource "aws_subnet" "myapp-subnet1" {
   vpc_id = aws_vpc.myapp-vpc.id
   cidr_block = var.subnet_cidr_block
@@ -76,3 +80,48 @@ resource "aws_default_security_group" "default" {
   }
 
 }
+
+resource "aws_key_pair" "ssh-key" {
+  key_name = "my-key"
+  public_key = file(var.public_key_location)
+}
+
+
+// getting latest aws instance id bases on filters
+data "aws_ami" "latest-amazon-linux-image" {
+  most_recent = true
+  owners = ["amazon"]
+  filter {
+    name = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+  filter {
+    name = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+// creating the ec2
+resource "aws_instance" "myapp-server" {
+  ami = data.aws_ami.latest-amazon-linux-image.id
+  instance_type = var.instance_type
+  subnet_id = aws_subnet.myapp-subnet1.id
+  availability_zone = var.avail_zone
+  vpc_security_group_ids = [aws_default_security_group.default.id]
+  associate_public_ip_address = true
+  key_name = aws_key_pair.ssh-key.key_name
+
+  tags = {
+    Name: "${var.env_prefix}-server"
+  }
+}
+
+
+// outputs ///////////////////
+output "aws-ami_id" {
+  value = data.aws_ami.latest-amazon-linux-image.id
+}
+output "ec2-public_ip" {
+  value = aws_instance.myapp-server.public_ip
+}
+
