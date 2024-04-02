@@ -21,18 +21,12 @@ resource "aws_subnet" "dev-subnet" {
   }
 }
 
-// query the existing default vpc id from data block
-data "aws_vpc" "existing" {
-  default = true
+output "dev-vpc-id" {
+  value = aws_vpc.dev-vpc.id
+}
+output "dev-subnet-id" {
+  value = aws_subnet.dev-subnet.id
 }
 
-// creating a new subnet in the existing vpc
-resource "aws_subnet" "dev-subnet-2" {
-  vpc_id     = data.aws_vpc.existing.id
-  cidr_block = "172.31.48.0/20"
 
-  tags = {
-    Name = "dev-subnet-2"
-  }
-}
 
