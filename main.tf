@@ -7,6 +7,8 @@ variable "env_prefix" {}
 variable "avail_zone" {}
 variable "instance_type" {}
 variable "public_key_location" {}
+variable "private_key_location" {}
+
 //variable "public_key_location" {}
 // -------------variable block-------------------------
 
@@ -110,9 +112,38 @@ resource "aws_instance" "myapp-server" {
   vpc_security_group_ids = [aws_default_security_group.default.id]
   associate_public_ip_address = true
   key_name = aws_key_pair.ssh-key.key_name
-  user_data = file("entry-script.sh")
+
+
+  #user_data = file("entry-script.sh")
+
   user_data_replace_on_change = true
 
+  connection {
+
+    type = "ssh"
+    host = self.public_ip
+    user = "ec2-user"
+    private_key = file(var.private_key_location)
+
+  }
+  // used to send file to server for execution
+  provisioner "file" {
+    source = "entry-script.sh"
+    destination = "/home/ec2-user/entry-script-on-ec2.sh"
+  }
+
+  // sue to execute commands on remote server
+  provisioner "remote-exec" {
+    // this file must be on remote server
+    //inline = ["/home/ec2-user/entry-script-on-ec2.sh"]
+
+    // take file locally
+    script = "entry-script.sh"
+  }
+
+  provisioner "local-exec" {
+    command = "echo The server's IP address is ${self.private_ip}"
+  }
 
   tags = {
     Name: "${var.env_prefix}-server"
