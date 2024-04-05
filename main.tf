@@ -12,6 +12,7 @@ variable "public_key_location" {}
 
 resource "aws_vpc" "myapp-vpc" {
   cidr_block = var.vpc_cidr_block
+  enable_dns_hostnames = true
 
    tags = {
     Name = "${var.env_prefix}-vpc"
@@ -110,7 +111,7 @@ resource "aws_instance" "myapp-server" {
   vpc_security_group_ids = [aws_default_security_group.default.id]
   associate_public_ip_address = true
   key_name = aws_key_pair.ssh-key.key_name
-  user_data = file("entry-script.sh")
+  #user_data = file("entry-script.sh")
   user_data_replace_on_change = true
 
 
